@@ -24,13 +24,22 @@ class db_manager:
         exit = False
         while not exit:
             choice = int(input(
-                "1. Update data\n2. Search by country name\n3. Search by country code\n0. Exit\n"))
+                "1. Update data\n2. Search by country name\n3. Search by country code\n4. Top 10 countries(Total Confirmed)\n5. Top 10 countries(Total Recovered)\n0. Exit\n"))
             if choice == 1:
                 answer = self.__update_covid_data()
+                print(answer)
             elif choice == 2:
                 answer = self.__search_by_country_name()
+                print(answer)
             elif choice == 3:
                 answer = self.__search_by_country_code()
+                print(answer)
+            elif choice == 4:
+                answer = self.__top_ten_countries_confirmed()
+                print(answer)
+            elif choice == 5:
+                answer = self.__top_ten_countries_recovered()
+                print(answer)
             elif choice == 0:
                 exit = True
                 print("Exit")
@@ -41,11 +50,11 @@ class db_manager:
         covid_data = requests.get(COVID19_URL)
         covid_data = covid_data.json()
 
-        self.__cursor.execute("DELETE FROM global")
+        self.__cursor.execute("TRUNCATE TABLE Global;")
         global_sql = "INSERT INTO global (NewConfirmed, TotalConfirmed, NewDeaths, TotalDeaths, NewRecovered, TotalRecovered) VALUES(%s, %s, %s, %s, %s, %s)"
         global_values = (covid_data['Global']["NewConfirmed"],
                          covid_data['Global']["TotalConfirmed"], covid_data['Global']["NewDeaths"], covid_data['Global']["TotalDeaths"], covid_data['Global']["NewRecovered"], covid_data['Global']["TotalRecovered"])
-        self.__cursor.execute("DELETE FROM countries")
+        self.__cursor.execute("TRUNCATE TABLE Countries;")
         self.__cursor.execute(global_sql, global_values)
         for item in covid_data['Countries']:
             countries_sql = "INSERT INTO countries (Country, CountryCode, Slug, NewConfirmed, TotalConfirmed, NewDeaths, TotalDeaths, NewRecovered, TotalRecovered, Date) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
@@ -83,3 +92,23 @@ class db_manager:
                   "New Deaths:", result[6], "\n" + "Total death:", result[7], "\n" + "New recovered:", result[8], "\n" + "Total recovered:", result[9], "\n" + "Last data update:", result[10], "\n")
         elif result == None:
             return print("\nWrong country code!\n")
+
+    def __top_ten_countries_confirmed(self):
+        self.__cursor.execute(
+            "SELECT Country, TotalConfirmed FROM `countries` ORDER BY `TotalConfirmed` DESC LIMIT 10")
+        result = self.__cursor.fetchall()
+        print("Top 10 of total confirmed:")
+        position = 0
+        for item in result:
+            position += 1
+            print(position, "Countries: ", item[0], "\nTotal confirmed: ", item[1], "\n")  
+
+    def __top_ten_countries_recovered(self):
+        self.__cursor.execute(
+            "SELECT Country, TotalRecovered FROM `countries` ORDER BY `TotalRecovered` DESC LIMIT 10")
+        result = self.__cursor.fetchall()
+        print("Top 10 of total recovered:")
+        position = 0
+        for item in result:
+            position += 1
+            print(position, "Countries: ", item[0], "\nTotal recovered: ", item[1], "\n") 
